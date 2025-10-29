@@ -45,7 +45,7 @@ pip install -r requirements.txt
 
 4. `.env`-Datei erstellen und konfigurieren:
 ```env
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/slack_clone
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/kanban_board
 GEMINI_API_KEY=dein-google-gemini-api-key
 CORS_ORIGINS=http://localhost:5173
 ```

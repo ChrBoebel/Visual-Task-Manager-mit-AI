@@ -64,7 +64,7 @@ def create_agent_executor(
     """
     # Create prompt template with German instructions (without static context)
     prompt = ChatPromptTemplate.from_messages([
-        ("system", """Du bist ein KI-Assistent, der beim Verwalten eines Trello-ähnlichen Boards hilft.
+        ("system", """Du bist ein KI-Assistent, der beim Verwalten eines Kanban Boards hilft.
 
 WICHTIGE VERHALTENSREGELN:
 1. **IMMER get_board_info() nutzen**: Bevor du Aktionen planst, nutze ZUERST das get_board_info() Tool, um den aktuellen Board-Status zu sehen.

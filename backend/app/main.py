@@ -8,7 +8,7 @@ from app.api import boards, chat
 Base.metadata.create_all(bind=engine)
 
 # Create FastAPI app
-app = FastAPI(title="Trello Clone API", version="1.0.0")
+app = FastAPI(title="Kanban Board API", version="1.0.0")
 
 # Add CORS middleware
 app.add_middleware(
@@ -26,7 +26,7 @@ app.include_router(chat.router, prefix="/api", tags=["chat"])
 # Root endpoint
 @app.get("/")
 async def root():
-    return {"message": "Trello Clone API", "version": "1.0.0"}
+    return {"message": "Kanban Board API", "version": "1.0.0"}
 
 # Health check
 @app.get("/health")
