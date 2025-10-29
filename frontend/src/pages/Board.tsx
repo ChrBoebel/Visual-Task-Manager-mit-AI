@@ -5,7 +5,8 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  closestCenter,
+  pointerWithin,
+  closestCorners,
   type DragEndEvent,
   type DragStartEvent,
   type DragOverEvent,
@@ -26,6 +27,7 @@ export default function Board({ boardId, onBoardUpdate }: BoardProps) {
   const [board, setBoard] = useState<BoardType | null>(null);
   const [activeCard, setActiveCard] = useState<CardType | null>(null);
   const [activeList, setActiveList] = useState<ListType | null>(null);
+  const [overListId, setOverListId] = useState<string | null>(null);
   const [editingCard, setEditingCard] = useState<CardType | null>(null);
   const [showAddList, setShowAddList] = useState(false);
   const [newListTitle, setNewListTitle] = useState('');
@@ -37,7 +39,7 @@ export default function Board({ boardId, onBoardUpdate }: BoardProps) {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 2,
       },
     })
   );
@@ -112,6 +114,16 @@ export default function Board({ boardId, onBoardUpdate }: BoardProps) {
 
     if (activeId === overId) return;
 
+    // Track which list is being hovered over (for visual feedback)
+    if (activeList) {
+      const overList = board.lists.find((list) => list.id === overId);
+      if (overList && overListId !== overId) {
+        setOverListId(overId);
+      } else if (!overList && overListId !== null) {
+        setOverListId(null);
+      }
+    }
+
     setBoard((prevBoard) => {
       if (!prevBoard) return prevBoard;
       const newLists = [...prevBoard.lists];
@@ -171,6 +183,7 @@ export default function Board({ boardId, onBoardUpdate }: BoardProps) {
     const { active } = event;
     setActiveCard(null);
     setActiveList(null);
+    setOverListId(null);
 
     if (!board) return;
 
@@ -403,7 +416,12 @@ export default function Board({ boardId, onBoardUpdate }: BoardProps) {
       <main className="flex-1 p-6 overflow-x-auto overflow-y-hidden">
         <DndContext
           sensors={sensors}
-          collisionDetection={closestCenter}
+          collisionDetection={(args) => {
+            // Use pointerWithin for lists (very sensitive)
+            // Use closestCorners for cards (stable performance)
+            const isListBeingDragged = board?.lists.some(list => list.id === args.active.id);
+            return isListBeingDragged ? pointerWithin(args) : closestCorners(args);
+          }}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
@@ -417,6 +435,7 @@ export default function Board({ boardId, onBoardUpdate }: BoardProps) {
                 <List
                   key={list.id}
                   list={list}
+                  isOver={overListId === list.id && activeList !== null}
                   onAddCard={handleAddCard}
                   onCardClick={handleCardClick}
                   onUpdateListTitle={handleUpdateListTitle}

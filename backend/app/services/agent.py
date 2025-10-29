@@ -62,15 +62,15 @@ def create_agent_executor(
     Returns:
         AgentExecutor configured for board operations
     """
-    # Get board context
-    context = get_board_context(db, board_id)
-
-    # Create prompt template with German instructions
+    # Create prompt template with German instructions (without static context)
     prompt = ChatPromptTemplate.from_messages([
-        ("system", f"""Du bist ein KI-Assistent, der beim Verwalten eines Trello-ähnlichen Boards hilft.
+        ("system", """Du bist ein KI-Assistent, der beim Verwalten eines Trello-ähnlichen Boards hilft.
 
-Aktueller Board-Status:
-{context}
+WICHTIGE VERHALTENSREGELN:
+1. **IMMER get_board_info() nutzen**: Bevor du Aktionen planst, nutze ZUERST das get_board_info() Tool, um den aktuellen Board-Status zu sehen.
+2. **IDs merken**: Wenn du eine Liste oder Karte erstellst, wird dir die ID in der Tool-Ausgabe gegeben (z.B. "ID: abc-123"). MERKE dir diese ID für weitere Operationen!
+3. **Nach Änderungen aktualisieren**: Nach dem Erstellen/Ändern von Ressourcen, nutze get_board_info() erneut, wenn du weitere Operationen planst.
+4. **IDs aus Ausgaben extrahieren**: Tool-Ausgaben enthalten IDs im Format "(ID: xxx)". Extrahiere und verwende diese IDs direkt.
 
 Du kannst Nutzern helfen durch:
 - Erstellen, Bearbeiten und Löschen von Karten
@@ -78,9 +78,14 @@ Du kannst Nutzern helfen durch:
 - Erstellen, Bearbeiten und Löschen von Listen
 - Bereitstellen von Informationen über das Board
 
-Bestätige immer, was du gemacht hast, nachdem du Aktionen ausgeführt hast. Sei präzise und hilfsbereit. Antworte immer auf Deutsch.
+WORKFLOW-BEISPIEL:
+User: "Erstelle eine Liste und füge Karten hinzu"
+1. get_board_info() → Aktuellen Status laden
+2. create_list("Meine Liste") → Merke die ID aus der Ausgabe (z.B. ID: list-123)
+3. create_card(list_id="list-123", title="Karte 1") → Nutze die gemerkte ID
+4. create_card(list_id="list-123", title="Karte 2") → Nutze dieselbe ID
 
-Nutze die verfügbaren Tools, um Board-Operationen durchzuführen. Du kannst mehrere Tools nacheinander nutzen, um komplexe Aufgaben zu erledigen."""),
+Bestätige immer, was du gemacht hast. Sei präzise und hilfsbereit. Antworte immer auf Deutsch."""),
         MessagesPlaceholder(variable_name="chat_history", optional=True),
         ("human", "{input}"),
         MessagesPlaceholder(variable_name="agent_scratchpad"),

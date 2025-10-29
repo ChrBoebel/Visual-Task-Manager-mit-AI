@@ -2,7 +2,7 @@
 
 Organisiere Aufgaben visuell mit Drag-and-Drop. Der integrierte KI-Assistent erstellt und verwaltet Karten auf natürliche Anfrage.
 
-![Screenshot der Anwendung](screenshot.png)
+![Screenshot der Anwendung](frontend/image.png)
 
 ## Was macht diese Anwendung?
 

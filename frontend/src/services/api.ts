@@ -158,11 +158,19 @@ export const cardsApi = {
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
+  tool_calls?: ToolCall[];
+}
+
+export interface ToolCall {
+  tool: string;
+  input: Record<string, any>;
+  output: string;
 }
 
 export interface ChatResponse {
   response: string;
   actions_taken: string[];
+  tool_calls?: ToolCall[];
 }
 
 export const chatApi = {

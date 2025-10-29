@@ -9,13 +9,14 @@ import type { List as ListType } from '../types';
 
 interface ListProps {
   list: ListType;
+  isOver: boolean;
   onAddCard: (listId: string, title: string) => void;
   onCardClick: (cardId: string) => void;
   onUpdateListTitle: (listId: string, title: string) => void;
   onDeleteList: (listId: string) => void;
 }
 
-export default function List({ list, onAddCard, onCardClick, onUpdateListTitle, onDeleteList }: ListProps) {
+export default function List({ list, isOver, onAddCard, onCardClick, onUpdateListTitle, onDeleteList }: ListProps) {
   const {
     attributes,
     listeners,
@@ -76,6 +77,8 @@ export default function List({ list, onAddCard, onCardClick, onUpdateListTitle, 
       <div className={`bg-muted/50 rounded-lg p-3 border transition-all duration-200 ${
         isDragging
           ? 'border-primary shadow-2xl'
+          : isOver
+          ? 'border-primary bg-primary/10 shadow-lg scale-[1.02]'
           : 'border-border hover:shadow-lg hover:border-primary/50 hover:scale-[1.02]'
       }`}>
         {/* List Header */}

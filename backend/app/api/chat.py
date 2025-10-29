@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from typing import List, Dict
+from typing import List, Dict, Any, Optional
 from app.database import get_db
 from app.services.chat import chat_service
 from app.models import Board
@@ -15,14 +15,22 @@ class ChatMessageRequest(BaseModel):
     message: str
 
 
+class ToolCall(BaseModel):
+    tool: str
+    input: Dict[str, Any]
+    output: str
+
+
 class ChatMessageResponse(BaseModel):
     response: str
     actions_taken: List[str]
+    tool_calls: Optional[List[ToolCall]] = None
 
 
 class ChatHistoryItem(BaseModel):
     role: str
     content: str
+    tool_calls: Optional[List[ToolCall]] = None
 
 
 @router.post("/chat/message", response_model=ChatMessageResponse)

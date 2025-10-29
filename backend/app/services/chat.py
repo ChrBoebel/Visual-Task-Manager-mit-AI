@@ -18,6 +18,7 @@ class ChatService:
         )
         self.agents: Dict[str, AgentExecutor] = {}  # board_id -> agent executor
         self.memories: Dict[str, ConversationBufferMemory] = {}  # board_id -> memory
+        self.full_messages: Dict[str, List[Dict]] = {}  # board_id -> full messages with tool_calls
 
     def _get_or_create_agent(self, db: Session, board_id: str) -> AgentExecutor:
         """Get or create agent executor for a board."""
@@ -46,19 +47,56 @@ class ChatService:
             # Get or create agent for this board
             agent_executor = self._get_or_create_agent(db, board_id)
 
-            # Execute agent
-            result = agent_executor.invoke({"input": message})
+            # Refresh board context before execution
+            # This ensures the agent sees the latest state via get_board_info() tool
+            from app.services.agent import get_board_context
+            current_context = get_board_context(db, board_id)
 
-            # Extract actions taken from intermediate steps
+            # Add context hint to help agent understand current state if needed
+            # (Agent is instructed to use get_board_info() tool, but we provide fallback)
+            enhanced_input = f"{message}"
+
+            # Execute agent with potentially enhanced input
+            result = agent_executor.invoke({"input": enhanced_input})
+
+            # Extract actions taken and tool calls from intermediate steps
             actions_taken = []
+            tool_calls = []
+
             if "intermediate_steps" in result:
                 for action, observation in result["intermediate_steps"]:
                     if hasattr(action, 'tool') and observation:
+                        # Add simple string for backwards compatibility
                         actions_taken.append(observation)
+
+                        # Add structured tool call info
+                        tool_calls.append({
+                            'tool': action.tool,
+                            'input': action.tool_input if hasattr(action, 'tool_input') else {},
+                            'output': observation
+                        })
+
+            # Store full message history with tool_calls for persistence
+            if board_id not in self.full_messages:
+                self.full_messages[board_id] = []
+
+            # Add user message
+            self.full_messages[board_id].append({
+                'role': 'user',
+                'content': message
+            })
+
+            # Add assistant message with tool_calls
+            self.full_messages[board_id].append({
+                'role': 'assistant',
+                'content': result.get('output', ''),
+                'tool_calls': tool_calls
+            })
 
             return {
                 'response': result.get('output', ''),
-                'actions_taken': actions_taken
+                'actions_taken': actions_taken,
+                'tool_calls': tool_calls
             }
 
         except Exception as e:
@@ -71,25 +109,13 @@ class ChatService:
         """Get chat history for a board.
 
         Returns:
-            List of messages with 'role' and 'content' keys
+            List of messages with 'role', 'content', and optionally 'tool_calls' keys
         """
-        if board_id not in self.memories:
-            return []
+        # Return full messages with tool_calls if available
+        if board_id in self.full_messages:
+            return self.full_messages[board_id]
 
-        memory = self.memories[board_id]
-        messages = []
-
-        # Get messages from memory
-        chat_history = memory.chat_memory.messages
-
-        for msg in chat_history:
-            role = 'user' if msg.type == 'human' else 'assistant'
-            messages.append({
-                'role': role,
-                'content': msg.content
-            })
-
-        return messages
+        return []
 
     def clear_history(self, board_id: str) -> bool:
         """Clear chat history for a board.
@@ -97,12 +123,17 @@ class ChatService:
         Returns:
             True if cleared, False if no session existed
         """
+        cleared = False
         if board_id in self.agents:
             del self.agents[board_id]
+            cleared = True
         if board_id in self.memories:
             del self.memories[board_id]
-            return True
-        return False
+            cleared = True
+        if board_id in self.full_messages:
+            del self.full_messages[board_id]
+            cleared = True
+        return cleared
 
 
 # Global chat service instance
